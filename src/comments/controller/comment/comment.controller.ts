@@ -33,10 +33,11 @@ export class CommentController {
   @ApiBearerAuth('jwt')
   @UseGuards(AuthGuard)
   @Delete('delete/:comment_id')
-  deleteComment(@Req() request,
+  deleteComment(
+    @Req() request,
     @Param('comment_id', ParseIntPipe) comment_id: number,
   ) {
     const user = request.user.sub as number;
-    return this.commentService.deleteComment(comment_id,user);
+    return this.commentService.deleteComment(comment_id, user);
   }
 }

@@ -7,11 +7,11 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { request } from 'http';
 import { AuthGuard } from 'src/auth/users/auth/auth.guard';
 import { CreatePostDTO } from 'src/posts/dtos/createPost.dto';
 import { UpdatePostDTO } from 'src/posts/dtos/updatePost.dto';
@@ -37,9 +37,14 @@ export class PostController {
   @ApiBearerAuth('jwt')
   @UseGuards(AuthGuard)
   @Get('followedPost')
-  fetchFollowPosts(@Req() request) {
+  fetchFollowPosts(
+    @Req() request,
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('sortBy') sortBy: string,
+  ) {
     const user = request.user.sub as number;
-    return this.postService.fetchFollowPosts(user);
+    return this.postService.fetchFollowPosts(user, page, limit, sortBy);
   }
 
   @ApiBearerAuth('jwt')

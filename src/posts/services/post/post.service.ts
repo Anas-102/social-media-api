@@ -15,7 +15,7 @@ export class PostService {
     @InjectRepository(User)
     private userdb: Repository<User>,
     @InjectRepository(Follow)
-    private followdb: Repository<Follow>
+    private followdb: Repository<Follow>,
   ) {}
 
   //   async fetchPosts() {
@@ -26,26 +26,49 @@ export class PostService {
     const user = this.userdb.findOne({ where: { id: id } });
     const userPosts = await this.postdb.find({
       where: { user: { id: (await user).id } },
-      relations: {user:true},
+      relations: { user: true },
     });
-      return userPosts;
+    return userPosts;
   }
 
-  async fetchFollowPosts(id: number) {
-    const user=await this.userdb.findOne({where:{id:id}})
-    const follower = await this.followdb.find({ where: { follower: user }, relations: { follower: true , follwing: true} })
-    const users = follower.map((a) => a.follwing)
-    return await this.postdb.find({ where: { user: users } });
-    
+  async fetchFollowPosts(
+    id: number,
+    page: number,
+    limit: number,
+    sortBy: string,
+  ) {
+    const skip = (page - 1) * limit;
+    const [sortCol, sortOrder] = sortBy.split(':');
+    const user = await this.userdb.findOne({ where: { id: id } });
+    const follower = await this.followdb.find({
+      where: { follower: user },
+      relations: { follower: true, follwing: true },
+    });
+    const users = follower.map((a) => a.follwing);
+    try {
+      return await this.postdb.find({
+        where: { user: users },
+        skip,
+        take: limit,
+        order: {
+          [sortCol]: sortOrder === 'desc' ? 'DESC' : 'ASC',
+        },
+      });
+    } catch (error) {
+      return 'Column name doesnt exist';
+    }
   }
 
-    createPost = async (user_id: number, info: CreatePostDTO) => {
-      const user = await this.userdb.findOne({where:{id:user_id}})
-        return await this.postdb.save(this.postdb.create({ ...info, user: user }));
+  createPost = async (user_id: number, info: CreatePostDTO) => {
+    const user = await this.userdb.findOne({ where: { id: user_id } });
+    return await this.postdb.save(this.postdb.create({ ...info, user: user }));
   };
 
   updatePost = async (post_id: number, info: UpdatePostDTO) => {
     const updated = await this.postdb.update(post_id, { ...info });
+    if (!updated.affected) {
+      return 'You havent updated anything';
+    }
     return await this.postdb.find({ where: { id: post_id } });
   };
 
